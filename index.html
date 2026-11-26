@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FormulaForge · Expression Evaluation &amp; Visualization</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e2e8f0;--acc:#4f46e5;--acc2:#06b6d4;--ok:#059669;--bad:#dc2626;--op:#4f46e5;--num:#0891b2;--var:#d97706;--un:#db2777;--code:#f1f5f9;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1020;--card:#121a30;--ink:#e6ebff;--mut:#8b97b8;--line:#243052;--acc:#818cf8;--acc2:#22d3ee;--ok:#34d399;--bad:#f87171;--op:#818cf8;--num:#22d3ee;--var:#fbbf24;--un:#f472b6;--code:#0b1226;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b1020;--card:#121a30;--ink:#e6ebff;--mut:#8b97b8;--line:#243052;--acc:#818cf8;--acc2:#22d3ee;--ok:#34d399;--bad:#f87171;--op:#818cf8;--num:#22d3ee;--var:#fbbf24;--un:#f472b6;--code:#0b1226;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Space Grotesk",system-ui,sans-serif;background-image:radial-gradient(circle at 15% 0,color-mix(in srgb,var(--acc) 18%,transparent),transparent 40%),radial-gradient(circle at 90% 10%,color-mix(in srgb,var(--acc2) 14%,transparent),transparent 35%)}
+.wrap{max-width:none;width:100%;margin:0;padding:28px clamp(16px,3.5vw,56px) 60px}html,body{min-height:100%}
+h1{font-size:clamp(24px,4.5vw,38px);margin:0;letter-spacing:-.5px}
+h1 span{background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mut);margin:6px 0 22px;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12.5px}
+.menu{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.mb{all:unset;cursor:pointer;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:2px;transition:.15s}
+.mb:hover{transform:translateY(-2px);border-color:var(--acc)}
+.mb.on{border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 22%,transparent)}
+.mb b{font-family:"JetBrains Mono",monospace;color:var(--acc);font-size:13px}
+.mb small{color:var(--mut);font-size:12px}
+.mb.x:hover,.mb.x.on{border-color:var(--bad)}.mb.x b{color:var(--bad)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 6px 24px rgba(0,0,0,.05)}
+.card h2{margin:0 0 12px;font-size:15px;font-family:"JetBrains Mono",monospace;color:var(--acc);letter-spacing:.3px}
+label,.k{display:block;font:600 11px "JetBrains Mono",monospace;color:var(--mut);letter-spacing:1px;text-transform:uppercase;margin:12px 0 5px}
+input{width:100%;background:var(--code);color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;font:16px "JetBrains Mono",monospace;outline:none}
+input:focus{border-color:var(--acc)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.chip{all:unset;cursor:pointer;font:13px "JetBrains Mono",monospace;background:var(--code);border:1px solid var(--line);border-radius:8px;padding:5px 10px}
+.chip:hover{border-color:var(--acc2)}
+.go{all:unset;cursor:pointer;background:linear-gradient(90deg,var(--acc),var(--acc2));color:#fff;font-weight:700;padding:11px 22px;border-radius:10px;margin-left:auto}
+.go:hover{filter:brightness(1.1)}
+code{display:block;background:var(--code);border-radius:8px;padding:8px 12px;font:14px "JetBrains Mono",monospace;overflow-x:auto}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font:13px "JetBrains Mono",monospace;min-width:560px}
+th{text-align:left;color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--line);padding:6px 8px}
+td{padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.res{font:700 34px "JetBrains Mono",monospace;color:var(--ok);margin-top:10px}
+.bad{border-color:var(--bad);color:var(--bad);font:600 14px "JetBrains Mono",monospace}
+.step{display:flex;gap:10px;font:13.5px "JetBrains Mono",monospace;padding:6px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap}
+.step i{color:var(--acc);font-style:normal;min-width:64px}.step em{color:var(--ok);font-style:normal;margin-left:auto}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font:12px "JetBrains Mono",monospace;color:var(--mut);margin-top:10px}
+.legend s{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;margin-right:5px;text-decoration:none}
+svg text{font:600 13px "JetBrains Mono",monospace;text-anchor:middle;dominant-baseline:central;fill:var(--ink)}
+.edge{stroke:var(--mut);stroke-width:1.6;opacity:.7}
+.n-op rect{stroke:var(--op);fill:color-mix(in srgb,var(--op) 16%,var(--card))}
+.n-num rect{stroke:var(--num);fill:color-mix(in srgb,var(--num) 16%,var(--card))}
+.n-var rect{stroke:var(--var);fill:color-mix(in srgb,var(--var) 16%,var(--card))}
+.n-un rect{stroke:var(--un);fill:color-mix(in srgb,var(--un) 16%,var(--card))}
+svg rect{stroke-width:2}
+.bye{text-align:center;padding:40px 18px}.bye h2{font-size:22px;color:var(--ink)}
+@media(max-width:560px){.menu{grid-template-columns:1fr}}
+
+[hidden]{display:none!important}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--card)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 20px;background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.brand{font-size:19px;margin-right:auto;white-space:nowrap;display:flex;align-items:center;gap:8px}.pdfbar{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}#pdfmsg{color:var(--mut);font:12.5px "JetBrains Mono",monospace}
+.brand b{background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+#nav{display:flex;gap:4px}
+#nav button,#theme,#full{all:unset;cursor:pointer;padding:8px 14px;border-radius:10px;font-weight:600;font-size:14px;color:var(--mut);transition:.15s}
+#nav button:hover,#theme:hover,#full:hover{background:var(--code);color:var(--ink)}
+#nav button.on{background:linear-gradient(90deg,var(--acc),var(--acc2));color:#fff}
+#theme,#full{border:1px solid var(--line);font-size:16px;padding:6px 11px}
+.hero{border-radius:22px;padding:34px 28px;margin-bottom:18px;border:1px solid var(--line);background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 20%,var(--card)),color-mix(in srgb,var(--acc2) 16%,var(--card)));position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-40px;top:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--acc2) 40%,transparent),transparent 70%)}
+.hero p{color:var(--mut);max-width:560px;margin:10px 0 0;position:relative}
+.hero h1{position:relative}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-bottom:16px}
+.fc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;transition:.2s}
+.fc:hover{transform:translateY(-3px);border-color:var(--acc);box-shadow:0 10px 28px color-mix(in srgb,var(--acc) 18%,transparent)}
+.fc .ic{font-size:26px}.fc h3{margin:8px 0 4px;font-size:16px}.fc p{margin:0;color:var(--mut);font-size:13.5px}
+.pipe{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px}
+.pipe div{flex:1;min-width:150px;background:var(--card);border:1.5px solid var(--acc);border-radius:12px;padding:10px 12px;font:600 12.5px "JetBrains Mono",monospace;text-align:center}
+.pipe div small{display:block;color:var(--mut);font-weight:400;margin-top:2px}
+.pipe span{color:var(--acc2);font-size:18px}
+.card p{margin:0 0 10px;color:var(--mut)}.card p b{color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sect{font:700 12px "JetBrains Mono",monospace;letter-spacing:2px;color:var(--mut);text-transform:uppercase;margin:24px 0 10px}
+.tag{display:inline-block;font:600 11px "JetBrains Mono",monospace;background:color-mix(in srgb,var(--acc) 16%,transparent);color:var(--acc);border-radius:6px;padding:2px 8px;margin:0 6px 6px 0}
+@media(max-width:640px){.two{grid-template-columns:1fr}.top{padding:8px 12px}.hero{padding:24px 18px}}
+#nav{flex-wrap:wrap}.ok{color:var(--ok)!important;font-weight:600}.er{color:var(--bad)!important;font-weight:600}td.w{white-space:normal;min-width:190px}</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><svg class="logo" viewBox="0 0 104 76" width="62" height="46" role="img" aria-label="FormulaForge logo: three-level tree (3 × 4) + (9 − 6) = 15"><path d="M52 11 L25 38 M52 11 L79 38 M25 38 L12 65 M25 38 L38 65 M79 38 L66 65 M79 38 L92 65" fill="none" stroke="var(--mut)" stroke-width="2"/><circle cx="52" cy="11" r="10" style="fill:color-mix(in srgb,var(--acc) 20%,var(--card));stroke:var(--acc);stroke-width:2"/><text x="52" y="11" text-anchor="middle" style="font:700 15px 'JetBrains Mono',monospace;fill:var(--ink)">+</text><circle cx="25" cy="38" r="10" style="fill:color-mix(in srgb,var(--acc2) 20%,var(--card));stroke:var(--acc2);stroke-width:2"/><text x="25" y="38" text-anchor="middle" style="font:700 15px 'JetBrains Mono',monospace;fill:var(--ink)">×</text><circle cx="79" cy="38" r="10" style="fill:color-mix(in srgb,var(--acc2) 20%,var(--card));stroke:var(--acc2);stroke-width:2"/><text x="79" y="38" text-anchor="middle" style="font:700 15px 'JetBrains Mono',monospace;fill:var(--ink)">−</text><circle cx="12" cy="65" r="10" style="fill:color-mix(in srgb,var(--var) 20%,var(--card));stroke:var(--var);stroke-width:2"/><text x="12" y="65" text-anchor="middle" style="font:700 12px 'JetBrains Mono',monospace;fill:var(--ink)">3</text><circle cx="38" cy="65" r="10" style="fill:color-mix(in srgb,var(--var) 20%,var(--card));stroke:var(--var);stroke-width:2"/><text x="38" y="65" text-anchor="middle" style="font:700 12px 'JetBrains Mono',monospace;fill:var(--ink)">4</text><circle cx="66" cy="65" r="10" style="fill:color-mix(in srgb,var(--var) 20%,var(--card));stroke:var(--var);stroke-width:2"/><text x="66" y="65" text-anchor="middle" style="font:700 12px 'JetBrains Mono',monospace;fill:var(--ink)">9</text><circle cx="92" cy="65" r="10" style="fill:color-mix(in srgb,var(--var) 20%,var(--card));stroke:var(--var);stroke-width:2"/><text x="92" y="65" text-anchor="middle" style="font:700 12px 'JetBrains Mono',monospace;fill:var(--ink)">6</text></svg><b>FormulaForge</b></div>
+  <nav id="nav"><button data-v="evaluator">Evaluator</button><button data-v="problem">Problem</button><button data-v="solution">Solution</button><button data-v="features">Features</button><button data-v="algorithms">Algorithms</button></nav>
+  <button id="theme" aria-label="Toggle light or dark theme" title="Toggle theme">🌙</button>
+  <button id="full" aria-label="Toggle full screen" title="Full screen">⛶</button>
+</header>
+<main class="wrap">
+
+<section id="v-evaluator">
+  <div class="pdfbar" id="pdfbar"><span id="pdfmsg"></span><button class="go" id="pdf" style="margin-left:0">⬇ Download PDF</button></div>
+  <div class="hero">
+    <h1><span>FormulaForge:</span> see how every answer is made</h1>
+    <p>Forge a formula into tokens, postfix, a drawn binary tree and a step-by-step calculation, so every result comes with proof. No eval() anywhere.</p>
+  </div>
+  <div class="seg" id="seg">
+    <button class="mb on" data-m="with"><b>1 · WITH VARIABLES</b><small>Define a = 10, b = 5 … then evaluate</small></button>
+    <button class="mb" data-m="none"><b>2 · WITHOUT VARIABLES</b><small>Pure numeric expression</small></button>
+  </div>
+  <div class="card" id="work">
+    <div id="vwrap"><label for="vars">Variables (e.g. a = 10, b = 5)</label><input id="vars" autocomplete="off" spellcheck="false"></div>
+    <label for="expr">Mathematical expression</label>
+    <input id="expr" autocomplete="off" spellcheck="false">
+    <div class="row">
+      <span class="k" style="margin:0">Insert:</span>
+      <button class="chip" data-i="×">×</button><button class="chip" data-i="÷">÷</button><button class="chip" data-i="−">−</button><button class="chip" data-i="(">(</button><button class="chip" data-i=")">)</button>
+      <button class="go" id="go">Evaluate ▶</button>
+    </div>
+    <div class="row"><span class="k" style="margin:0">Try:</span><span id="presets" class="row" style="margin:0"></span></div>
+  </div>
+  <div id="out"></div>
+</section>
+
+<section id="v-features" hidden>
+  <div class="hero"><h1>Built for <span>clarity</span></h1><p>Everything the original Java program does, plus a visual tree you can read at a glance.</p></div>
+  <div class="grid">
+    <div class="fc"><div class="ic">🧮</div><h3>Named variables</h3><p>Declare values like <code style="display:inline;padding:1px 6px">a = 10, b = 2.5</code> and use them in any expression.</p></div>
+    <div class="fc"><div class="ic">➗</div><h3>Real division &amp; decimals</h3><p>Numbers such as 12.75 are supported, and division is true floating-point, not integer.</p></div>
+    <div class="fc"><div class="ic">➖</div><h3>Unary minus</h3><p>Handles <code style="display:inline;padding:1px 6px">−a</code>, <code style="display:inline;padding:1px 6px">−(a+b)</code> and <code style="display:inline;padding:1px 6px">2 × −3</code> by detecting where a minus is unary.</p></div>
+    <div class="fc"><div class="ic">🔣</div><h3>Unicode symbols</h3><p>Accepts − × ÷ as well as - * / and normalizes them before parsing.</p></div>
+    <div class="fc"><div class="ic">🚨</div><h3>Precise diagnostics</h3><p>Reports bad characters, undefined variables, unmatched brackets, missing operators and division by zero, with positions.</p></div>
+    <div class="fc"><div class="ic">📋</div><h3>Step-by-step traces</h3><p>See every Shunting-Yard step with the operator stack, then every postorder calculation.</p></div>
+    <div class="fc"><div class="ic">🌳</div><h3>Visual expression tree</h3><p>A top-down tree with colour-coded nodes whose spacing adapts so labels never overlap.</p></div>
+    <div class="fc"><div class="ic">📏</div><h3>Up to 2,000 tokens</h3><p>Long expressions are accepted, and anything beyond the limit is rejected with a clear message.</p></div>
+      </div>
+</section>
+
+<section id="v-algorithms" hidden>
+  <div class="hero"><h1>How it <span>works</span></h1><p>Four classic stages, each feeding the next. Every one runs in linear time on the expression length.</p></div>
+  <div class="pipe">
+    <div>1 · Lexer<small>text → tokens</small></div><span>→</span>
+    <div>2 · Shunting-Yard<small>infix → postfix</small></div><span>→</span>
+    <div>3 · Tree builder<small>postfix → tree</small></div><span>→</span>
+    <div>4 · Postorder eval<small>tree → number</small></div>
+  </div>
+  <div class="two">
+    <div class="card"><h2>1 · LEXICAL ANALYSIS</h2>
+      <p>A single left-to-right scan classifies each piece as <b>NUMBER, VARIABLE, OPERATOR, LPAREN</b> or <b>RPAREN</b>, after normalizing − × ÷.</p>
+      <p><b>Unary-minus rule:</b> a “-” is unary if it is the first token, or follows “(” or another operator.</p>
+      <p>It also checks brackets, empty “()”, adjacent operands such as <code style="display:inline;padding:1px 6px">a b</code>, and a trailing operator.</p>
+      <span class="tag">O(n)</span><span class="tag">single pass</span></div>
+    <div class="card"><h2>2 · SHUNTING-YARD</h2>
+      <p>Dijkstra’s algorithm moves operands straight to the output and keeps operators on a <b>stack</b>, popping by precedence.</p>
+      <table style="min-width:0"><tr><th>Operator</th><th>Precedence</th><th>Associativity</th></tr><tr><td>u-</td><td>3</td><td>right</td></tr><tr><td>* /</td><td>2</td><td>left</td></tr><tr><td>+ -</td><td>1</td><td>left</td></tr></table>
+      <label>Example</label><code>(a + b) × 2  →  a b + 2 *</code>
+      <span class="tag">stack</span><span class="tag">O(n)</span></div>
+    <div class="card"><h2>3 · EXPRESSION TREE</h2>
+      <p>Postfix is read once with a stack of subtrees. An operand becomes a leaf; a binary operator pops the <b>right</b> child, then the <b>left</b>, and pushes the new node back.</p>
+      <p>Unary minus pops one operand and stores it as its right child. Exactly one node must remain at the end.</p>
+      <span class="tag">stack</span><span class="tag">binary tree</span></div>
+    <div class="card"><h2>4 · POSTORDER EVALUATION</h2>
+      <p>A depth-first walk visits <b>Left → Right → Root</b>, so operands are always ready before their operator. Each step is logged.</p>
+      <p>Division checks the divisor: if |d| &lt; 10⁻¹² it stops with a division-by-zero error.</p>
+      <span class="tag">recursion</span><span class="tag">O(n)</span></div>
+  </div>
+  <div class="card"><h2>TREE DRAWING</h2>
+    <p>Leaves are placed left to right in slots sized by their label width, and each parent is centred above its children. Depth sets the row, so wide labels such as <b>a=12.5</b> never collide.</p></div>
+  <div class="card"><h2>COMPLEXITY</h2><div class="scroll"><table style="min-width:0"><tr><th>Stage</th><th>Time</th><th>Space</th></tr>
+    <tr><td>Tokenizer</td><td>O(n)</td><td>O(n)</td></tr><tr><td>Shunting-Yard</td><td>O(n)</td><td>O(n)</td></tr>
+    <tr><td>Tree build</td><td>O(n)</td><td>O(n)</td></tr><tr><td>Evaluation</td><td>O(n)</td><td>O(h) call stack</td></tr></table></div></div>
+</section>
+
+<section id="v-problem" hidden>
+  <div class="hero"><h1>The <span>problem</span></h1><p>Why the same formula gave different answers at the observatory, and why nobody could tell where it went wrong.</p></div>
+  <div class="card"><h2>PROBLEM STATEMENT</h2>
+    <p>At a small observatory, volunteers use mathematical expressions to calculate nightly measurements. Different volunteers sometimes obtain different results for the same expression. Their old calculator displays only the final answer, so no one can tell where a calculation went wrong.</p>
+    <p><b>Task:</b> develop an Expression Evaluation and Visualization System that produces both an accurate result and an understandable record of how it was obtained.</p></div>
+  <div class="two">
+    <div class="card"><h2>ROOT CAUSE 1 · AMBIGUOUS RULES</h2><p>Nobody had written down how an expression must be read. Each volunteer applied their own habits for operator order, grouping, minus signs and division, so one formula had several valid-looking readings.</p></div>
+    <div class="card"><h2>ROOT CAUSE 2 · HIDDEN WORK</h2><p>The old calculator showed only the final number. Two different answers could not be compared step by step, so the mistake could not be located, only suspected.</p></div>
+  </div>
+  <div class="card"><h2>WHAT THE VOLUNTEERS GOT WRONG</h2><div class="scroll"><table style="min-width:640px">
+    <tr><th>Expression</th><th>Mistaken result</th><th>Correct</th><th>Why it happened</th></tr>
+    <tr><td>2 + 3 × 4</td><td class="er">20</td><td class="ok">14</td><td class="w">Read left to right, ignoring that × binds tighter than +</td></tr>
+    <tr><td>10 − 4 − 3</td><td class="er">9</td><td class="ok">3</td><td class="w">Grouped from the right; subtraction must be left-associative</td></tr>
+    <tr><td>7 ÷ 2</td><td class="er">3</td><td class="ok">3.5</td><td class="w">Integer division dropped the fractional part</td></tr>
+    <tr><td>8 − −3</td><td class="er">5 or error</td><td class="ok">11</td><td class="w">The second minus is a sign (unary), not another subtraction</td></tr>
+    <tr><td>(2 + 3 × 4</td><td class="er">14 or 20</td><td class="ok">rejected</td><td class="w">Missing “)”: each person guessed where to close it</td></tr>
+    <tr><td>6 ÷ (3 − 3)</td><td class="er">∞ / blank</td><td class="ok">rejected</td><td class="w">Division by zero produced a silent bad value</td></tr>
+    <tr><td>rate × 2 (typed “rte”)</td><td class="er">0</td><td class="ok">rejected</td><td class="w">A mistyped variable quietly became zero</td></tr>
+    <tr><td>12.5.3 + 1</td><td class="er">13.5 or 13.53</td><td class="ok">rejected</td><td class="w">A malformed number was accepted and guessed</td></tr>
+    <tr><td>6 × 2 or 8 − 3 with Unicode symbols</td><td class="er">ignored / invalid</td><td class="ok">12 / 5</td><td class="w">× ÷ − were not recognized as operators</td></tr>
+  </table></div></div>
+  <div class="card"><h2>IN SHORT</h2><p>Different answers came from <b>unwritten rules</b> (precedence, associativity, unary minus, real division) and <b>unchecked input</b> (brackets, numbers, variables, zero divisors), and the lack of any <b>record</b> hid which of these caused the gap.</p></div>
+</section>
+
+<section id="v-solution" hidden>
+  <div class="hero"><h1>Approach &amp; <span>solution</span></h1><p>How we turned an unreliable one-line answer into a result you can verify at every step.</p></div>
+  <div class="sect">How we got here</div>
+  <div class="two">
+    <div class="card"><h2>1 · FIND WHY ANSWERS DIFFER</h2><p>We listed every way one expression can be read differently (the table on the Problem page) and grouped them into unwritten rules and unchecked input.</p></div>
+    <div class="card"><h2>2 · WRITE THE RULES DOWN</h2><p>One fixed grammar: a precedence table, left-associative binary operators, right-associative unary minus, real division. Now there is exactly one correct reading.</p></div>
+    <div class="card"><h2>3 · SPLIT INTO STAGES</h2><p>Instead of one opaque calculation, four small stages: tokenize, convert to postfix, build a tree, evaluate it. Each stage has one job and can be checked alone.</p></div>
+    <div class="card"><h2>4 · RECORD EVERY STAGE</h2><p>Each stage leaves evidence: a token and stack trace, a drawn tree and a calculation log. The answer is the last line of a visible story.</p></div>
+    <div class="card"><h2>5 · VALIDATE BEFORE COMPUTING</h2><p>Bad input is rejected early with its position and reason, so nothing is silently guessed. Division by zero stops the run instead of producing noise.</p></div>
+    <div class="card"><h2>6 · COMPARE, DON’T ARGUE</h2><p>Two volunteers with different answers can compare traces. The first line where they differ is the mistake.</p></div>
+  </div>
+  <div class="sect">Each failure, and its fix</div>
+  <div class="card"><div class="scroll"><table style="min-width:620px">
+    <tr><th>Failure</th><th>Fix in FormulaForge</th><th>Where you see it</th></tr>
+    <tr><td>Wrong operator order</td><td class="w">Precedence table in Shunting-Yard</td><td class="w">Postfix trace, tree shape</td></tr>
+    <tr><td>Wrong grouping (10 − 4 − 3)</td><td class="w">Pop equal precedence for left-associative operators</td><td class="w">Stack column of the trace</td></tr>
+    <tr><td>Integer division</td><td class="w">All values are decimals; true division</td><td class="w">Evaluation steps (7 ÷ 2 ⇒ 3.5)</td></tr>
+    <tr><td>Unary vs binary minus</td><td class="w">Lexer marks “u-” by position</td><td class="w">Token “u-” in the trace, unary node in the tree</td></tr>
+    <tr><td>Unicode symbols</td><td class="w">Normalized before parsing</td><td class="w">Accepted everywhere</td></tr>
+    <tr><td>Silent bad input</td><td class="w">Early validation with position</td><td class="w">[REJECTED] message</td></tr>
+    <tr><td>No record of work</td><td class="w">Three linked records per run</td><td class="w">Steps 1, 2 and 3 on the Evaluator page</td></tr>
+  </table></div></div>
+  <div class="sect">Worked example</div>
+  <div class="card"><h2>a = 10, b = 5 · (a + b) × 2</h2>
+    <div class="step"><i>Tokens</i><span>( a + b ) × 2</span></div>
+    <div class="step"><i>Postfix</i><span>a b + 2 *</span></div>
+    <div class="step"><i>Tree</i><span>× at the root, + on the left, 2 on the right, a and b under +</span></div>
+    <div class="step"><i>Step 1</i><span>Lookup a</span><em>⇒ 10</em></div>
+    <div class="step"><i>Step 2</i><span>Lookup b</span><em>⇒ 5</em></div>
+    <div class="step"><i>Step 3</i><span>Add 10 + 5</span><em>⇒ 15</em></div>
+    <div class="step"><i>Step 4</i><span>Multiply 15 × 2</span><em>⇒ 30</em></div>
+    <div class="row"><button class="go" id="tryEx" style="margin-left:0">Run it in the Evaluator ▶</button></div></div>
+  <div class="sect">Outcome</div>
+  <div class="grid">
+    <div class="fc"><div class="ic">🎯</div><h3>Accurate</h3><p>One grammar means one answer, no matter who types the formula.</p></div>
+    <div class="fc"><div class="ic">🔍</div><h3>Understandable</h3><p>Trace, tree and calculation log explain how the answer was reached.</p></div>
+    <div class="fc"><div class="ic">🧾</div><h3>Auditable</h3><p>Any disagreement can be traced to the first step where two runs differ.</p></div>
+  </div>
+</section>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);let TREE=null,LAST=null;
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const fail=m=>{throw new Error('Error: '+m)};
+const MAX=2000;
+
+function fmt(v){
+  if(Number.isInteger(v)) return Math.abs(v)<1e21?v.toFixed(0):String(v);
+  return v.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+}
+
+/* ---------- variables ---------- */
+function parseVars(s){
+  const m=new Map();
+  if(!s||!s.trim()||s.trim().toLowerCase()==='none') return m;
+  for(const part of s.replace(/\u2212/g,'-').split(',')){
+    const t=part.trim(); if(!t) continue;
+    const kv=t.split('=');
+    if(kv.length!==2) fail(`Invalid variable assignment format '${t}'. Use 'a = 10, b = 5'.`);
+    const name=kv[0].trim(), val=kv[1].trim();
+    if(!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) fail(`Invalid variable name '${name}'.`);
+    if(!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(val)) fail(`Invalid numeric value '${val}' for variable '${name}'.`);
+    m.set(name,parseFloat(val));
+  }
+  return m;
+}
+
+/* ---------- lexer ---------- */
+function tokenize(raw,vars){
+  if(!raw||!raw.trim()) fail('Empty expression provided.');
+  const e=raw.replace(/\u2212/g,'-').replace(/\u00D7/g,'*').replace(/\u00F7/g,'/');
+  const T=[]; let i=0,open=0; const n=e.length;
+  while(i<n){
+    const ch=e[i];
+    if(/\s/.test(ch)){i++;continue}
+    if(T.length>=MAX) fail('Expression exceeds maximum limit of 2,000 tokens.');
+    if(/[0-9.]/.test(ch)){
+      const s=i; let dots=0;
+      while(i<n&&/[0-9.]/.test(e[i])){if(e[i]==='.')dots++;i++}
+      const num=e.slice(s,i);
+      if(dots>1||num==='.') fail(`Invalid numeric token '${num}' at position ${s}.`);
+      if(i<n&&/[A-Za-z_]/.test(e[i])) fail(`Missing operator between number and variable near position ${i}.`);
+      T.push({type:'NUM',value:num,pos:s});continue;
+    }
+    if(/[A-Za-z_]/.test(ch)){
+      const s=i; while(i<n&&/[A-Za-z0-9_]/.test(e[i]))i++;
+      const v=e.slice(s,i);
+      if(!vars.has(v)) fail(`Undefined variable '${v}' at position ${s}.`);
+      T.push({type:'VAR',value:v,pos:s});continue;
+    }
+    if(ch==='('){open++;T.push({type:'LP',value:'(',pos:i});i++;continue}
+    if(ch===')'){
+      open--; if(open<0) fail(`Unmatched closing parenthesis ')' at position ${i}.`);
+      if(T.length&&T[T.length-1].type==='LP') fail(`Empty parentheses '()' at position ${i}.`);
+      T.push({type:'RP',value:')',pos:i});i++;continue;
+    }
+    if('+-*/'.includes(ch)){
+      const prev=T.length?T[T.length-1]:null;
+      const lead=!prev||prev.type==='LP'||prev.type==='OP';
+      if(ch==='-') T.push({type:'OP',value:lead?'u-':'-',pos:i});
+      else{ if(lead) fail(`Unexpected binary operator '${ch}' at position ${i}.`); T.push({type:'OP',value:ch,pos:i}); }
+      i++;continue;
+    }
+    fail(`Invalid token '${ch}' at position ${i}.`);
+  }
+  if(open>0) fail(`Missing ${open} closing parenthesis ')'.`);
+  if(!T.length) fail('Expression contains no valid tokens.');
+  if(T[T.length-1].type==='OP') fail(`Expression cannot end with operator '${T[T.length-1].value}'.`);
+  for(let k=0;k<T.length-1;k++){
+    const a=T[k],b=T[k+1];
+    if(['NUM','VAR','RP'].includes(a.type)&&['NUM','VAR','LP'].includes(b.type))
+      fail(`Missing operator between '${a.value}' and '${b.value}' at position ${b.pos}.`);
+  }
+  return T;
+}
+
+/* ---------- shunting-yard ---------- */
+const prec=o=>o==='u-'?3:(o==='*'||o==='/')?2:1;
+function toPostfix(inf){
+  const out=[],st=[],rows=[];
+  const snap=()=>st.length?'['+st.map(t=>t.value).join(', ')+']':'[empty]';
+  const outS=()=>out.length?out.map(t=>t.value).join(' '):'[empty]';
+  inf.forEach((t,i)=>{
+    if(t.type==='NUM'||t.type==='VAR') out.push(t);
+    else if(t.type==='LP') st.push(t);
+    else if(t.type==='RP'){
+      while(st.length&&st[st.length-1].type!=='LP') out.push(st.pop());
+      if(!st.length) fail('Mismatched parentheses during parsing.');
+      st.pop();
+    } else {
+      while(st.length&&st[st.length-1].type==='OP'){
+        const cp=prec(t.value),tp=prec(st[st.length-1].value);
+        if(t.value==='u-'?cp<tp:cp<=tp) out.push(st.pop()); else break;
+      }
+      st.push(t);
+    }
+    rows.push([i+1,t.value,snap(),outS()]);
+  });
+  let s=inf.length+1;
+  while(st.length){
+    const t=st.pop(); if(t.type==='LP') fail("Unclosed '(' remaining on stack.");
+    out.push(t); rows.push([s++,'(flush)',snap(),outS()]);
+  }
+  return {post:out,rows};
+}
+
+/* ---------- tree + evaluation ---------- */
+function build(post){
+  const st=[];
+  for(const t of post){
+    if(t.type==='NUM'||t.type==='VAR') st.push({t,left:null,right:null});
+    else{
+      const nd={t,left:null,right:null};
+      if(t.value==='u-'){ if(!st.length) fail("Malformed expression (missing operand for unary '-')."); nd.right=st.pop(); }
+      else{ if(st.length<2) fail(`Malformed expression (insufficient operands for '${t.value}').`); nd.right=st.pop(); nd.left=st.pop(); }
+      st.push(nd);
+    }
+  }
+  if(st.length!==1) fail('Invalid expression structure (extra operands remaining).');
+  return st[0];
+}
+function evalNode(n,vars,steps){
+  if(!n) return 0;
+  if(n.t.type==='NUM') return parseFloat(n.t.value);
+  if(n.t.type==='VAR'){const v=vars.get(n.t.value);steps.push([`Lookup`,`${n.t.value}`,fmt(v)]);return v}
+  if(n.t.value==='u-'){
+    const a=evalNode(n.right,vars,steps); let r=-a; if(r===0) r=0;
+    steps.push(['Unary −',`−(${fmt(a)})`,fmt(r)]);return r;
+  }
+  const l=evalNode(n.left,vars,steps), r=evalNode(n.right,vars,steps), op=n.t.value; let v;
+  if(op==='+')v=l+r; else if(op==='-')v=l-r; else if(op==='*')v=l*r;
+  else{ if(Math.abs(r)<1e-12) fail(`Division by zero in subexpression '${fmt(l)} / ${fmt(r)}'.`); v=l/r; }
+  steps.push([op==='*'?'Multiply':op==='/'?'Divide':op==='+'?'Add':'Subtract',`${fmt(l)} ${op} ${fmt(r)}`,fmt(v)]);
+  return v;
+}
+
+/* ---------- tree drawing (SVG) ---------- */
+function treeSVG(root,vars){
+  let cursor=0,maxD=0; const nodes=[],edges=[];
+  (function walk(n,d){
+    maxD=Math.max(maxD,d);
+    const label=n.t.type==='VAR'?`${n.t.value}=${fmt(vars.get(n.t.value))}`:n.t.value;
+    const w=Math.max(46,label.length*9+24);
+    const kids=[n.left,n.right].filter(Boolean); let x;
+    if(!kids.length){x=cursor+w/2;cursor+=w+22}
+    else{
+      const cs=kids.map(k=>walk(k,d+1));
+      x=cs.length===2?(cs[0].x+cs[1].x)/2:cs[0].x;
+      cs.forEach((c,idx)=>edges.push([x,d,c.x,d+1,kids.length===2?(idx===0?'/':'\\'):'\\']));
+    }
+    const kind=n.t.type==='NUM'?'num':n.t.type==='VAR'?'var':n.t.value==='u-'?'un':'op';
+    const me={x,d,label,w,kind}; nodes.push(me); return me;
+  })(root,0);
+  const W=Math.max(cursor+20,160),H=(maxD+1)*78+20,Y=d=>d*78+36;
+  TREE={nodes,edges,W,H};let s=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Expression tree">`;
+  edges.forEach(e=>{s+=`<line class="edge" x1="${e[0]+10}" y1="${Y(e[1])+17}" x2="${e[2]+10}" y2="${Y(e[3])-17}"/>`});
+  nodes.forEach(n=>{
+    s+=`<g class="n-${n.kind}" transform="translate(${n.x+10},${Y(n.d)})"><rect x="${-n.w/2}" y="-17" width="${n.w}" height="34" rx="17"/><text>${esc(n.label)}</text></g>`;
+  });
+  return s+'</svg>';
+}
+
+/* ---------- rendering ---------- */
+function traceCard(rows,post){
+  return `<div class="card"><h2>STEP 1 · INFIX → POSTFIX CONVERSION TRACE</h2><div class="scroll"><table><tr><th>Step</th><th>Token</th><th>Operator stack</th><th>Postfix output queue</th></tr>${
+    rows.map(r=>`<tr><td>${r[0]}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td></tr>`).join('')
+  }</table></div><label>Final postfix expression</label><code>${esc(post.map(t=>t.value).join(' '))}</code></div>`;
+}
+function treeCard(root,vars){
+  return `<div class="card"><h2>STEP 2 · BINARY EXPRESSION TREE</h2><div class="scroll" style="text-align:center">${treeSVG(root,vars)}</div>
+  <div class="legend"><span><s style="background:var(--op)"></s>operator</span><span><s style="background:var(--un)"></s>unary minus (u-)</span><span><s style="background:var(--num)"></s>number</span><span><s style="background:var(--var)"></s>variable=value</span><span>edges: ╱ left · ╲ right</span></div></div>`;
+}
+function evalCard(steps,val){
+  return `<div class="card"><h2>STEP 3 · POSTORDER EVALUATION TRACE</h2>${
+    steps.map((s,i)=>`<div class="step"><i>Step ${i+1}</i><span>${esc(s[0])}</span><span>${esc(s[1])}</span><em>⇒ ${esc(s[2])}</em></div>`).join('')||'<div class="step">Literal value — nothing to compute.</div>'
+  }${val===null?'':`<label>Final result</label><div class="res">${esc(fmt(val))}</div>`}</div>`;
+}
+
+function run(){
+  const vs=mode==='with'?$('vars').value:'', ex=$('expr').value, steps=[]; let h=''; LAST={vs,ex,steps};
+  h+=`<div class="card"><div class="k" style="margin-top:0">Input variables</div><code>${esc(vs.trim()||'(none)')}</code><div class="k">Input expression</div><code>${esc(ex)}</code></div>`;
+  try{
+    const vars=parseVars(vs), inf=tokenize(ex,vars), {post,rows}=toPostfix(inf);
+    h+=traceCard(rows,post);LAST.rows=rows;LAST.post=post;
+    const root=build(post);
+    h+=treeCard(root,vars);LAST.tree=TREE;
+    const val=evalNode(root,vars,steps);
+    h+=evalCard(steps,val);LAST.val=val;
+  }catch(e){
+    if(steps.length) h+=evalCard(steps,null);
+    LAST.err=e.message;h+=`<div class="card bad">[REJECTED] ${esc(e.message)}</div>`;
+  }
+  $('out').innerHTML=h;
+  $('out').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ---------- modes, presets, theme, routing ---------- */
+let mode='with';
+const ex={with:['a = 10, b = 5','(a + b) × 2 − −a ÷ b'],none:['','(3.5 + 2) × 4 − 6 ÷ 3']};
+const presets=[['Decimals','with','a = 12.5, b = 4, c = 3','(a + b) ÷ c − −b × 2'],['Divide by zero','with','x = 7, y = 0','x ÷ y'],['Unary minus','none','','−(3 + 4) × (2 − 8.5) ÷ 5'],['Syntax error','none','','2 + × 3']];
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('.mb').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  $('vwrap').hidden=m==='none';
+  $('vars').value=ex[m][0]; $('expr').value=ex[m][1]; $('out').innerHTML='';
+}
+document.querySelectorAll('.mb').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+$('presets').innerHTML=presets.map((p,i)=>`<button class="chip" data-p="${i}">${p[0]}</button>`).join('');
+document.querySelectorAll('[data-p]').forEach(c=>c.onclick=()=>{const p=presets[c.dataset.p];setMode(p[1]);$('vars').value=p[2];$('expr').value=p[3];run()});
+$('go').onclick=run;
+document.querySelectorAll('.chip[data-i]').forEach(c=>c.onclick=()=>{const i=$('expr');i.setRangeText(c.dataset.i,i.selectionStart??i.value.length,i.selectionEnd??i.value.length,'end');i.focus()});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT')run()});
+
+const root=document.documentElement;
+const isDark=()=>root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+function applyTheme(t){root.dataset.theme=t;$('theme').textContent=t==='dark'?'☀️':'🌙';try{localStorage.setItem('theme',t)}catch(e){}}
+let saved=null;try{saved=localStorage.getItem('theme')}catch(e){}
+applyTheme(saved||(isDark()?'dark':'light'));
+$('theme').onclick=()=>applyTheme(isDark()?'light':'dark');
+
+const views=['evaluator','problem','solution','features','algorithms'];
+function route(){
+  const h=location.hash.slice(1), v=views.includes(h)?h:'evaluator';
+  views.forEach(x=>{$('v-'+x).hidden=x!==v});
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  scrollTo(0,0);
+}
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{location.hash=b.dataset.v});
+addEventListener('hashchange',route);
+document.getElementById('tryEx').onclick=()=>{location.hash='evaluator';setTimeout(()=>{setMode('with');$('vars').value='a = 10, b = 5';$('expr').value='(a + b) × 2';run()},0)};
+if(!document.fullscreenEnabled)$('full').hidden=true;
+$('full').onclick=()=>{try{const f=document.fullscreenElement?document.exitFullscreen():root.requestFullscreen();f&&f.catch&&f.catch(()=>{})}catch(e){}};
+/* ---------- PDF export ---------- */
+const pmsg=t=>{$('pdfmsg').textContent=t};
+const pdfSafe=t=>String(t).replace(/\u2212/g,'-').replace(/\u21d2/g,'=>').replace(/[^\x00-\xFF]/g,'?');
+const KC={op:[79,70,229],un:[219,39,119],num:[8,145,178],var:[217,119,6]};
+async function makePDF(){
+  const L=LAST;
+  if(!L){pmsg('Evaluate an expression first.');return}
+  const dl=window.claude&&claude.use?await claude.use('downloads'):null;
+  if(!dl){pmsg('PDF download is not available in this view.');return}
+  if(!window.jspdf){pmsg('PDF library failed to load.');return}
+  try{
+    const d=new window.jspdf.jsPDF({unit:'mm',format:'a4'});
+    const M=15,PW=180; let y=18;
+    const chk=h=>{if(y+h>285){d.addPage();y=18}};
+    d.setFont('helvetica','bold');d.setFontSize(20);d.setTextColor(79,70,229);d.text('FormulaForge',M,y);
+    d.setFont('helvetica','normal');d.setFontSize(10);d.setTextColor(100);d.text('Expression Evaluation Report   |   '+new Date().toLocaleString(),M,y+6);y+=15;
+    const head=t=>{chk(14);d.setFont('helvetica','bold');d.setFontSize(12);d.setTextColor(79,70,229);d.text(t,M,y);y+=2;d.setDrawColor(200);d.setLineWidth(0.3);d.line(M,y,M+PW,y);y+=6;d.setTextColor(20)};
+    const para=(t,sz=10,col=[20,20,20])=>{d.setFont('courier','normal');d.setFontSize(sz);d.setTextColor(...col);d.splitTextToSize(pdfSafe(t),PW).forEach(l=>{chk(5);d.text(l,M,y);y+=5});d.setTextColor(20)};
+    head('Input');
+    para('Variables : '+(L.vs.trim()||'(none)'));para('Expression: '+L.ex);y+=3;
+    if(L.rows){
+      head('Step 1 - Infix to postfix conversion trace');
+      const cw=[14,22,52,92];
+      const row=(c,b)=>{d.setFont('courier',b?'bold':'normal');d.setFontSize(8.5);const ps=c.map((v,i)=>d.splitTextToSize(pdfSafe(v),cw[i]-2));const n=Math.max(...ps.map(q=>q.length));chk(n*4+3);let x=M;ps.forEach((q,i)=>{d.text(q,x+1,y);x+=cw[i]});y+=n*4+1.5;d.setDrawColor(225);d.line(M,y-3,M+PW,y-3)};
+      row(['Step','Token','Operator stack','Postfix output'],true);L.rows.forEach(r=>row(r.map(String)));
+      y+=2;para('Final postfix: '+L.post.map(t=>t.value).join(' '),9.5);y+=3;
+    }
+    if(L.tree){
+      head('Step 2 - Binary expression tree');
+      const T=L.tree,k=Math.min(0.26,PW/T.W),th=T.H*k;
+      chk(th+10);
+      const ox=M+(PW-T.W*k)/2,oy=y,Y=q=>oy+(q*78+36)*k;
+      d.setDrawColor(130);d.setLineWidth(0.4);
+      T.edges.forEach(e=>d.line(ox+(e[0]+10)*k,Y(e[1])+17*k,ox+(e[2]+10)*k,Y(e[3])-17*k));
+      T.nodes.forEach(n=>{
+        const c=KC[n.kind],w=n.w*k,h=34*k,cx=ox+(n.x+10)*k,cy=Y(n.d);
+        d.setFillColor(...c.map(v=>Math.round(v*0.15+255*0.85)));d.setDrawColor(...c);d.setLineWidth(0.5);
+        d.roundedRect(cx-w/2,cy-h/2,w,h,h/2,h/2,'FD');
+        d.setFont('courier','bold');d.setFontSize(Math.max(5,13*k*2.835));d.setTextColor(20,20,20);
+        d.text(pdfSafe(n.label),cx,cy,{align:'center',baseline:'middle'});
+      });
+      y=oy+th+4;
+      para('Legend: indigo = operator, pink = unary minus (u-), cyan = number, amber = variable=value',8.5,[100,100,100]);y+=3;
+    }
+    if(L.steps.length||(L.val!==null&&L.val!==undefined)){
+      head('Step 3 - Postorder evaluation trace');
+      L.steps.forEach((s,i)=>para('Step '+(i+1)+'  '+s[0]+': '+s[1]+'   =>   '+s[2],9.5));
+      if(L.val!==null&&L.val!==undefined){chk(16);y+=3;d.setFont('helvetica','bold');d.setFontSize(15);d.setTextColor(5,150,105);d.text('FINAL RESULT = '+pdfSafe(fmt(L.val)),M,y+4);y+=12;d.setTextColor(20)}
+    }
+    if(L.err){chk(12);y+=3;para('[REJECTED] '+L.err,10,[220,38,38])}
+    const r=await dl.save({filename:'FormulaForge-report.pdf',data:d.output('arraybuffer')});
+    pmsg(r&&r.status==='saved'?'PDF saved.':'PDF sent.');
+  }catch(e){
+    pmsg(e&&e.code==='declined'?'Download cancelled.':'Could not save the PDF'+(e&&e.code?' ('+e.code+')':'.'));
+  }
+}
+$('pdf').onclick=makePDF;
+if(window.claude&&claude.use)claude.use('downloads').then(x=>{if(!x)$('pdfbar').hidden=true}).catch(()=>{});
+setMode('with'); route();
+</script>
+</body>
+</html>
